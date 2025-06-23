@@ -1,7 +1,8 @@
 [package]
-name = "adorno-filter"
-version = "0.1.0"
 edition = "2024"
+name = "adorno-filter"
+publish = false
+version = "0.1.0"
 
 [dependencies]
 console = "0.15.11"

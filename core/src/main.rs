@@ -8,7 +8,7 @@ use std::string::String;
 fn main() -> std::io::Result<()> {
     let detection_word: String = env::args().skip(1).next().unwrap_or("default".to_string());
 
-    let mut filter = Decorator::new(detection_word);
+    let mut filter = Decorator::new(&detection_word).unwrap();
     let mut input_stream = Term::stdout();
     loop {
         // read character from stdin

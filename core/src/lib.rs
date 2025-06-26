@@ -1,5 +1,3 @@
-#![feature(assert_matches)]
-
 use std::collections::VecDeque;
 
 const BACKSPACE: &str = "\x08";
@@ -13,23 +11,31 @@ pub struct Decorator {
 }
 
 #[derive(Debug)]
-pub struct BadTargetError;
+pub struct Error(&'static str);
 
-impl std::fmt::Display for crate::BadTargetError {
+pub type Result<T> = std::result::Result<T, Error>;
+
+impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Bad target to detect")
+        write!(f, "Detector error: {}", self.0)
     }
 }
 
-impl std::error::Error for crate::BadTargetError {}
+impl core::convert::From<&'static str> for Error {
+    fn from(value: &'static str) -> Self {
+        Self(value)
+    }
+}
+
+impl std::error::Error for Error {}
 
 impl Decorator {
     /// Creates a new decorator using the specified character sequence to match against the input
-    /// stream.
-    pub fn new(word_to_detect: &str) -> Result<Decorator, BadTargetError> {
+    /// stream. The sequence to detect must be non-empty.
+    pub fn new(word_to_detect: &str) -> Result<Decorator> {
         let number_of_target_characters = word_to_detect.chars().count();
         if number_of_target_characters < 1 {
-            Err(BadTargetError)
+            Err("Can't detect empty target".into())
         } else {
             Ok(Decorator {
                 max_length: number_of_target_characters,
@@ -48,7 +54,7 @@ impl Decorator {
     fn decorate(input: &str) -> String {
         // Erase the characters output already (remember, we haven't output the last character
         // in the input string yet).
-        let mut result = String::from(BACKSPACE.repeat(input.chars().count() - 1));
+        let mut result = BACKSPACE.repeat(input.chars().count() - 1);
 
         // Output the queue surrounded by decorators.
         result.push(DECORATOR);
@@ -78,7 +84,6 @@ impl Decorator {
 #[cfg(test)]
 mod tests {
     use crate::{DECORATOR, Decorator};
-    use std::assert_matches::assert_matches;
 
     #[test]
     fn detect_simple_word() {
@@ -89,14 +94,14 @@ mod tests {
             .map(|character| decorator.process(character))
             .collect::<Vec<_>>()
             .join("");
-        let expected_decorated_word: String = format!("{}{}{}", DECORATOR, input, DECORATOR);
+        let expected_decorated_word: String = format!("{DECORATOR}{input}{DECORATOR}");
         assert!(output.ends_with(&expected_decorated_word));
     }
 
     #[test]
     fn handle_empty_detection_string() {
         let decorator = Decorator::new("");
-        assert_matches!(decorator, Err(_));
+        assert!(decorator.is_err());
     }
 
     #[test]
